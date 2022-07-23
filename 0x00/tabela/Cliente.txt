@@ -1,0 +1,9 @@
+BEGIN TRANSACTION;
+CREATE TABLE IF NOT EXISTS "Cliente" (
+	"id"	integer PRIMARY KEY AUTOINCREMENT,
+	"nome"	varchar(80) NOT NULL,
+	"email"	varchar(40) NOT NULL,
+	"telefone"	integer
+);
+INSERT INTO "Cliente" VALUES (1,'Betty','betty@techcamps.com',12345678);
+COMMIT;
