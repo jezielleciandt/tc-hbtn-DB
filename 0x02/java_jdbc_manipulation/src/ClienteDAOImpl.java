@@ -1,35 +1,45 @@
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ClienteDAOImpl implements ClienteDAO{
-    private static Connection conexao;
-    private static String urlConexao = "jdbc:sqlite:banco.sqlite";
+    Connection conexao = null;
     @Override
     public Connection connect(String urlConexao) {
         try {
-            Class.forName("org.sqlite.JDBC");
             conexao = DriverManager.getConnection(urlConexao);
-        } catch (SQLException e1) {
+        } catch (SQLException e) {
             System.err.println("Não foi possível abrir a conexão com o banco!");
-        } catch (ClassNotFoundException e2) {
-            System.err.println("Ocorreu uma falha ao utilizar o driver!");
+        }
+        finally {
+            try{
+                if(conexao != null){
+                    conexao.close();
+                }
+            }catch (SQLException exception){
+                System.err.println(exception.getMessage());
+            }
         }
         return conexao;
     }
 
     @Override
     public void createTable(String urlConexao) {
+
+        StringBuffer query = new StringBuffer();
+        query.append("CREATE TABLE IF NOT EXISTS cliente (");
+        query.append("id integer PRIMARY KEY , ");
+        query.append("nome text NOT NULL, ");
+        query.append("idade integer, ");
+        query.append("cpf text NOT NULL, ");
+        query.append("rg text ");
+        query.append(")");
         try {
             conexao = connect(urlConexao);
-            Statement stm = conexao.createStatement();
-            stm.executeUpdate("DROP TABLE IF EXISTS cliente");
+           PreparedStatement preparedStatement = conexao.prepareStatement(query.toString());
+            preparedStatement.execute();
+            preparedStatement.close();
 
-            stm.executeUpdate("CREATE TABLE cliente (" + "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
-                    + "nome TEXT NOT NULL," + "idade INTEGER NOT NULL" +"cpf TEXT NOT NULL," + "rg TEXT NOT NULL," );
-
-                       stm.close();
         } catch (SQLException e) {
             System.err.println("Não foi possível criar o banco!");
         }
@@ -37,10 +47,12 @@ public class ClienteDAOImpl implements ClienteDAO{
 
     @Override
     public void insert(String urlConexao, Cliente cliente){
+        String query = "INSERT INTO cliente VALUES (null, '" + cliente.getNome() + "', '" + cliente.getIdade() +"', '" + cliente.getCpf() + "', "
+                + cliente.getRg() + ")";
         try {
-            String query = "INSERT INTO pessoa VALUES (null, '" + cliente.getNome() + "', '" + cliente.getIdade() +"', '" + cliente.getCpf() + "', "
-                    + cliente.getRg() + ")";
-            alterarBD(query, urlConexao);
+            conexao = connect(urlConexao);
+            PreparedStatement preparedStatement = conexao.prepareStatement(query);
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
             System.err.println("Não foi possível inserir a pessoa no banco!");
         }
@@ -48,9 +60,28 @@ public class ClienteDAOImpl implements ClienteDAO{
 
     @Override
     public void selectAll(String urlConexao) {
+        String query = "SELECT * FROM cliente";
+        List<Cliente> clientes = new ArrayList<>();
       try {
-          String query = "SELECT * FROM cliente";
-          alterarBD(query, urlConexao);
+          connect(urlConexao);
+          PreparedStatement preparedStatement = conexao.prepareStatement(query);
+          ResultSet resultSet = preparedStatement.executeQuery();
+
+          while(resultSet.next()){
+              Cliente cliente = new Cliente();
+              cliente.setId(resultSet.getInt("id"));
+              cliente.setNome(resultSet.getString("nome"));
+              cliente.setIdade(resultSet.getInt("idade"));
+              cliente.setCpf(resultSet.getString("cpf"));
+              cliente.setRg(resultSet.getString("rg"));
+
+              clientes.add(cliente);
+          }
+          resultSet.close();
+          preparedStatement.close();
+
+          clientes.forEach(System.out::println);
+
       }catch (SQLException e){
           System.err.println("Não foi possível buscar os dados do banco!");
       }
@@ -59,10 +90,13 @@ public class ClienteDAOImpl implements ClienteDAO{
 
     @Override
     public void update(String urlConexao, int id, String name, Integer idade) {
+        String query = "UPDATE cliente SET nome = '" + name + "', idade = '" + idade
+                + " WHERE pessoa.id = " + id;
         try {
-            String query = "UPDATE cliente SET nome = '" + name + "', idade = '" + idade
-                   + " WHERE pessoa.id = " + id;
-            alterarBD(query, urlConexao);
+            conexao = connect(urlConexao);
+            PreparedStatement preparedStatement = conexao.prepareStatement(query);
+            preparedStatement.executeUpdate();
+            preparedStatement.close();
         } catch (SQLException e) {
             System.err.println("Não foi possível atualizar os dados da pessoa no banco!");
         }
@@ -70,17 +104,15 @@ public class ClienteDAOImpl implements ClienteDAO{
 
     @Override
     public void delete(String urlConexao, int id) {
+        String query = "DELETE FROM cliente WHERE id = " + id;
         try {
-            String query = "DELETE FROM cliente WHERE id = " + id;
-            alterarBD(query, urlConexao);
+            conexao = connect(urlConexao);
+            PreparedStatement preparedStatement = conexao.prepareStatement(query);
+            preparedStatement.executeUpdate();
+            preparedStatement.close();
         } catch (SQLException e) {
             System.err.println("Não foi possível remover a pessoa no banco!");
         }
     }
-    private void alterarBD(String query, String urlConexao)throws SQLException{
-        Connection bd = connect(urlConexao);
-        Statement stm = bd.createStatement();
-        stm.executeUpdate(query);
-        stm.close();
-    }
+
 }
