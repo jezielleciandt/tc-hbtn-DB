@@ -8,7 +8,7 @@ import models.ProdutoModel;
 import java.util.Date;
 import java.util.List;
 
-public class AdministrativoAPP {
+public class AdministrativoApp {
     public static void main(String[] args) {
         ProdutoModel produtoModel = new ProdutoModel();
 
